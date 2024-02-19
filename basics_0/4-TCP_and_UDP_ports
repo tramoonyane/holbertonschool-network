@@ -7,11 +7,11 @@ echo "Proto Recv-Q Send-Q Local Address           Foreign Address         State 
 # Display TCP listening ports with PID and program name
 if command -v ss &> /dev/null; then
     # Use ss on systems that support it
-    ss -tlpn | awk 'NR > 1 {printf "%s\t%7s\t%7s\t%-23s %-23s %-10s", $1, "", "", $4, "", $6; system("lsof -i :"substr($4, index($4, ":")+1)" -n -P -t | xargs -r ps -o pid= -o comm=")}'
+    ss -tlpn | awk 'NR > 1 {printf "%s\t%7s\t%7s\t%-23s %-23s %-10s", $1, "", "", $4, "", $6; system("lsof -i :"substr($4, index($4, ":")+1)" -n -P -t | tail -n +2 | xargs -r ps -o pid= -o comm=")}'
 else
     # Fall back to netstat
     if command -v netstat &> /dev/null; then
-        netstat -tnlp | awk '$6 == "LISTEN" {printf "tcp\t%7s\t%7s\t%-23s %-23s %-10s", $4, $5, "", "", $7; system("lsof -i :"substr($4, index($4, ":")+1)" -n -P -t | xargs -r ps -o pid= -o comm=")}'
+        netstat -tnlp | awk '$6 == "LISTEN" {printf "tcp\t%7s\t%7s\t%-23s %-23s %-10s", $4, $5, "", "", $7; system("lsof -i :"substr($4, index($4, ":")+1)" -n -P -t | tail -n +2 | xargs -r ps -o pid= -o comm=")}'
     else
         echo "Error: Neither ss nor netstat command found."
         exit 1
@@ -21,11 +21,11 @@ fi
 # Display UDP listening ports with PID and program name
 if command -v ss &> /dev/null; then
     # Use ss on systems that support it
-    ss -ulpn | awk 'NR > 1 {printf "%s\t%7s\t%7s\t%-23s %-23s %-10s", $1, "", "", $4, "", $6; system("lsof -i :"substr($4, index($4, ":")+1)" -n -P -t | xargs -r ps -o pid= -o comm=")}'
+    ss -ulpn | awk 'NR > 1 {printf "%s\t%7s\t%7s\t%-23s %-23s %-10s", $1, "", "", $4, "", $6; system("lsof -i :"substr($4, index($4, ":")+1)" -n -P -t | tail -n +2 | xargs -r ps -o pid= -o comm=")}'
 else
     # Fall back to netstat
     if command -v netstat &> /dev/null; then
-        netstat -unlp | awk '$6 == "LISTEN" {printf "udp\t%7s\t%7s\t%-23s %-23s %-10s", $4, $5, "", "", $7; system("lsof -i :"substr($4, index($4, ":")+1)" -n -P -t | xargs -r ps -o pid= -o comm=")}'
+        netstat -unlp | awk '$6 == "LISTEN" {printf "udp\t%7s\t%7s\t%-23s %-23s %-10s", $4, $5, "", "", $7; system("lsof -i :"substr($4, index($4, ":")+1)" -n -P -t | tail -n +2 | xargs -r ps -o pid= -o comm=")}'
     else
         echo "Error: Neither ss nor netstat command found."
         exit 1
@@ -37,7 +37,7 @@ echo "Proto RefCnt Flags       Type       State         I-Node   PID/Program nam
 
 # Display UNIX domain sockets
 if command -v netstat &> /dev/null; then
-    netstat -lx | awk '$1 == "unix" && $NF ~ /^@/ {printf "%s\t%-6s%-8s%-11s%-14s%-8s%-19s%-s\n", $1, $2, $3, $4, $5, $6, "", substr($NF, 2); system("lsof "substr($NF, 2)" | awk 'NR==2{print $2,$1}'")}'
+    netstat -lx | awk '$1 == "unix" && $NF ~ /^@/ {printf "%s\t%-6s%-8s%-11s%-14s%-8s%-19s%-s\n", $1, $2, $3, $4, $5, $6, "", substr($NF, 2); system("lsof "substr($NF, 2)" | tail -n +2 | awk 'NR==1{print $2,$1}'")}'
 else
     echo "Error: netstat command not found."
     exit 1

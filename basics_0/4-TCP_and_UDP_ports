@@ -1,3 +1,29 @@
 #!/usr/bin/env bash
-# TCP and UDP ports listening
-netstat -lp
+# Display listening ports with associated PID and program name
+
+echo "Active Internet connections (only servers)"
+echo "Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name"
+
+# Display TCP listening ports with PID and program name
+if netstat --version | grep -q "ss "; then
+    # Use ss on systems that support it
+    ss -tlpn | awk 'NR > 1 {printf "%s\t%7s\t%7s\t%-23s %-23s %-10s", $1, "", "", $4, "", $6; system("lsof -i :"substr($4, index($4, ":")+1)" -n -P -t | xargs -r ps -o pid= -o comm=")}'
+else
+    # Fall back to netstat
+    netstat -tnlp | awk '$6 == "LISTEN" {printf "tcp\t%7s\t%7s\t%-23s %-23s %-10s", $4, $5, "", "", $7; system("lsof -i :"substr($4, index($4, ":")+1)" -n -P -t | xargs -r ps -o pid= -o comm=")}'
+fi
+
+# Display UDP listening ports with PID and program name
+if netstat --version | grep -q "ss "; then
+    # Use ss on systems that support it
+    ss -ulpn | awk 'NR > 1 {printf "%s\t%7s\t%7s\t%-23s %-23s %-10s", $1, "", "", $4, "", $6; system("lsof -i :"substr($4, index($4, ":")+1)" -n -P -t | xargs -r ps -o pid= -o comm=")}'
+else
+    # Fall back to netstat
+    netstat -unlp | awk '$6 == "LISTEN" {printf "udp\t%7s\t%7s\t%-23s %-23s %-10s", $4, $5, "", "", $7; system("lsof -i :"substr($4, index($4, ":")+1)" -n -P -t | xargs -r ps -o pid= -o comm=")}'
+fi
+
+echo "Active UNIX domain sockets (only servers)"
+echo "Proto RefCnt Flags       Type       State         I-Node   PID/Program name    Path"
+
+# Display UNIX domain sockets
+netstat -lx | awk '$1 == "unix" && $NF ~ /^@/ {printf "%s\t%-6s%-8s%-11s%-14s%-8s%-19s%-s\n", $1, $2, $3, $4, $5, $6, "", substr($NF, 2); system("lsof "substr($NF, 2)" | awk 'NR==2{print $2,$1}'")}'
